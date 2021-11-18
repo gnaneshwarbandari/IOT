@@ -98,7 +98,7 @@ void callback(char* topic, byte* payload, unsigned int payloadLength) {
 }
 void publishData()
 {
-  String a = "sample";
+  int a = 10;
   Serial.print("Sample Value: ");
   Serial.println(a);
 
