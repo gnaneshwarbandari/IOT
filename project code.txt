@@ -1,0 +1,137 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+const char* ssid = "chinni";
+const char* password = "susru@9999";
+#define ldr A0
+#define led1 D1
+#define led2 D2
+#define ORG "teafms"
+#define DEVICE_TYPE "iotprojectdevice"
+#define DEVICE_ID "1001"
+#define TOKEN "123456789010"
+String command;
+char server[] = ORG ".messaging.internetofthings.ibmcloud.com";
+char publishTopic[] = "iot-2/evt/Data/fmt/json";
+char authMethod[] = "use-token-auth";
+char token[] = TOKEN;
+char clientId[] = "d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID;
+WiFiClient wifiClient;
+void callback(char* topic, byte* payload, unsigned int payloadLength);
+PubSubClient client(server, 1883, callback,wifiClient);
+char topic[] = "iot-2/cmd/home/fmt/String";// cmd  REPRESENT command type AND COMMAND IS TEST OF FORMAT STRING
+int publishInterval = 5000; // 30 seconds
+long lastPublishMillis;
+String data;
+int flag = 0;
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(ldr,INPUT);
+  pinMode(led1,OUTPUT);
+  pinMode(led2,OUTPUT);
+  wifiConnect();
+  mqttConnect();
+}
+
+void loop() {
+ if (millis() - lastPublishMillis > publishInterval)
+  {
+    publishData();
+    lastPublishMillis = millis();
+  }
+  
+  if (!client.loop()) {
+    mqttConnect();
+  }
+}
+
+void wifiConnect() {
+  Serial.print("Connecting to "); Serial.print(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("nWiFi connected, IP address: "); Serial.println(WiFi.localIP());
+}
+
+void mqttConnect() {
+  if (!client.connected()) {
+    Serial.print("Reconnecting MQTT client to "); Serial.println(server);
+    while (!client.connect(clientId, authMethod, token)) {
+      Serial.print(".");
+      delay(500);
+    }
+    initManagedDevice();
+    Serial.println();
+  }
+}
+
+void initManagedDevice() {
+  if (client.subscribe(topic)) {
+   // Serial.println(client.subscribe(topic));
+    Serial.println("subscribe to cmd OK");
+  } else {
+    Serial.println("subscribe to cmd FAILED");
+  }
+}
+
+void callback(char* topic, byte* payload, unsigned int payloadLength) {
+  
+  Serial.print("callback invoked for topic: ");
+  Serial.println(topic);
+
+  for (int i = 0; i < payloadLength; i++) {
+    //Serial.print((char)payload[i]);
+    data += (char)payload[i];
+  }
+  
+  Serial.print("Data: "+data );
+  Serial.println(flag);
+  
+  if(data == "m"){
+    flag = 1;
+  }
+  else if (data == "a"){
+    flag = 0;
+  }
+  if(flag == 1){
+    if(data == "lon"){
+      digitalWrite(led1,HIGH);
+    }
+    else if(data == "loff"){
+      digitalWrite(led1,LOW);
+    }
+    else if(data == "fon"){
+      digitalWrite(led2,HIGH);
+    }
+    else if(data == "foff"){
+      digitalWrite(led2,LOW);
+    }
+  }
+  data = "";
+}
+void publishData() 
+{
+  int a = analogRead(ldr);
+  Serial.print("LDR Sensor Value: ");
+  Serial.println(a);
+  String payload = "{\"d\":{\"ldr\":";
+  payload += a;
+  payload += "}}";
+  if(flag == 0){
+    analogWrite(led1, a);
+    analogWrite(led2, a);
+  }
+
+  Serial.print("Sending payload: ");
+ 
+  Serial.print("\n");
+  Serial.print("Sending payload: "); Serial.println(payload);
+
+  if (client.publish(publishTopic, (char*) payload.c_str())) {
+    Serial.println("Publish OK");
+  } else {
+    Serial.println("Publish FAILED");
+  }
+}
