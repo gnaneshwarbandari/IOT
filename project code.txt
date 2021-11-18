@@ -87,7 +87,7 @@ void callback(char* topic, byte* payload, unsigned int payloadLength) {
     data += (char)payload[i];
   }
 
-  Serial.print("Data: " + data );
+  Serial.println("Data: " + data );
   if (data == "lon") {
     digitalWrite(D0, HIGH);
   }
