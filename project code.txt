@@ -102,7 +102,7 @@ void publishData()
   Serial.print("Sample Value: ");
   Serial.println(a);
 
-  String payload = "{\"d\":{\"ldr\":";
+  String payload = "{\"d\":{\"data\":";
   payload += a;
   payload += "}}";
 
