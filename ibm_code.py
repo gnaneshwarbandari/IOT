@@ -1,4 +1,3 @@
-#IBM Watson IoT Platform integration with Python
 #pip install wiotp-sdk
 import wiotp.sdk.device
 import time
